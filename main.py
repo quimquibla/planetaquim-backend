@@ -1,39 +1,33 @@
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import openai
+from openai import OpenAI
 import os
-
-# Configura tu clave API de OpenAI
-openai.api_key = os.getenv("OPENAI_API_KEY")  # o ponla directamente como string, si estás en entorno de prueba
 
 app = FastAPI()
 
-# Permitir CORS (necesario para que funcione con el frontend)
+# Configura CORS para permitir todas las conexiones (puedes restringirlo si lo necesitas)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Puedes restringir esto a ["https://planetaquim.netlify.app"] si quieres más seguridad
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Esquema del cuerpo de la petición
+# Modelo de entrada
 class ChatRequest(BaseModel):
     message: str
 
+# Cliente de OpenAI
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
 @app.post("/chat")
 async def chat_endpoint(request: ChatRequest):
-    try:
-        response = openai.ChatCompletion.create(
-            model="gpt-4",  # o "gpt-3.5-turbo"
-            messages=[
-                {"role": "system", "content": "Eres un asistente cálido y amable llamado Planetaquim."},
-                {"role": "user", "content": request.message}
-            ]
-        )
-        answer = response.choices[0].message["content"].strip()
-        return {"response": answer}
-
-    except Exception as e:
-        return {"error": str(e)}
+    completion = client.chat.completions.create(
+        model="gpt-4",
+        messages=[
+            {"role": "system", "content": "Ets Planetaquim, un assistent que ajuda amb empatia i saviesa."},
+            {"role": "user", "content": request.message}
+        ]
+    )
+    return {"response": completion.choices[0].message.content.strip()}
